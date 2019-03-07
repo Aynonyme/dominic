@@ -1,0 +1,59 @@
+<html>
+	<body>
+		<iframe id="player" type="text/html" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0" frameborder="0"></iframe>
+		<script>
+			window.onload = function() {
+				var parameters = {id: "M7lc1UVf-VE", volume: 50, start: 0};
+				var url = location.search;
+				var items = location.search.substr(1).split("&");
+				for (var index = 0; index < items.length; index++) {
+					tmp = items[index].split("=");
+					parameters[tmp[0]] = decodeURIComponent(tmp[1]);
+				}
+				var iframe = document.getElementById('player');
+				iframe.src = "https://www.youtube.com/embed/" + parameters.id + "?enablejsapi=1&controls=0&iv_load_policy=3&rel=0&showinfo=0&start=" + Math.floor(parameters.start);
+
+				iframe.send_message_to_youtube = function(obj) {
+					this.contentWindow.postMessage(JSON.stringify(obj), "*");
+				}
+				iframe.send_message_to_dominic = function(obj) {
+					parent.postMessage(JSON.stringify(obj), "*");
+				}
+				function yt_listener(e) {
+					var msg = JSON.parse(e.data);
+					if(msg.sender == "dominic") {
+						if("volume" in msg) {
+							iframe.send_message_to_youtube({"event": "command", "func": "setVolume", args: [msg.volume]});
+						}
+						if("time" in msg) {
+							iframe.send_message_to_youtube({"event": "command", "func": "seekTo", args: [msg.time]});
+						}
+					} else {
+						if(msg.event == "initialDelivery") {
+							iframe.send_message_to_dominic({"duration": msg.info.duration, "time": msg.info.currentTime});
+						}
+						else if(msg.event == "onReady") {
+							iframe.send_message_to_youtube({"event": "command", "func": "setVolume", args: [parameters.volume]})
+							//iframe.send_message_to_youtube({"event": "command", "func": "seekTo", args: [parameters.start]})
+							iframe.send_message_to_youtube({"event": "command", "func": "playVideo"})
+						}
+						else if(msg.event == "infoDelivery") {
+							if("currentTime" in msg.info)
+								iframe.send_message_to_dominic({time: msg.info.currentTime});
+							if("playerState" in msg.info) {
+								if(msg.info.playerState == 0) {
+									iframe.send_message_to_dominic({end: true});
+								}
+							}
+						}
+					}
+				}
+				iframe.onload = function() {
+					window.addEventListener("message", yt_listener, false);
+					this.send_message_to_youtube({event: "listening"});
+				}
+			}
+
+		</script>
+	</body>
+</html>

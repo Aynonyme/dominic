@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+	<body>
+		<script type='text/javascript' src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+
+		<script type='text/javascript'>
+		window.onload = function() {
+			const context = cast.framework.CastReceiverContext.getInstance();
+			const options = new cast.framework.CastReceiverOptions();
+			context.addCustomMessageListener('urn:x-cast:systems.dominic', function(e) {
+				var msg = e.data;
+				var url = msg.url;
+				if(url) { // Due to multi dominic
+					window.location.href = url;
+				}
+			});
+			options.customNamespaces = {
+				['urn:x-cast:systems.dominic']: cast.framework.system.MessageType.JSON
+			};
+			options.disableIdleTimeout = true;
+			context.start(options);
+			context.setApplicationState('Dominic on ' + document.location.origin);
+		};
+
+		</script>
+	</body>
+</html>
+
